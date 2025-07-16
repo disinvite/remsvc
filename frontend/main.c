@@ -235,6 +235,7 @@ tFiletype_compiler_spec gFiletype_compiler_spec_0040a038 = {
     '-',
 };
 
+// GLOBAL: CL 0x00409238
 const tFiletype_spec gFiletype_specs[] = {
     {
         "c",
@@ -578,12 +579,11 @@ tCompile_filetype GetCompileFileType(const char *filepath)
     int i;
 
     _splitpath(filepath, NULL, NULL, NULL, extension);
-    if (extension[0] == '\0') {
-        return eFiletype_none;
-    }
-    for (i = 0; gFiletype_specs[i].stage != eOutput_linker; i++) {
-        if (_stricmp(&extension[1], gFiletype_specs[i].extension) == 0) {
-            return (tCompile_filetype) i;
+    if (extension[0] != '\0') {
+        for (i = 0; gFiletype_specs[i].stage != eOutput_linker; i++) {
+            if (_stricmp(&extension[1], gFiletype_specs[i].extension) == 0) {
+                return (tCompile_filetype) i;
+            }
         }
     }
     return eFiletype_none;
@@ -594,7 +594,7 @@ void FUN_0040553c(int index)
 {
     char temp_path[1024];
 
-    if (strlen(gApp_data->tempPath) + 10 > sizeof(temp_path) - 1) {
+    if (strlen(gApp_data->tempPath) + 10 >= sizeof(temp_path)) {
         FatalError(0);
     }
     FormatParsedOptionValue(temp_path, "%t", gApp_data);
@@ -813,12 +813,15 @@ const char *GetErrorMessage(int code)
 void FatalError(int code, ...)
 {
     va_list ap;
+    const char* message;
+
     if (code == 0) {
         code = 2000;
     }
     WriteTextF(STDERR_FILENO, GetErrorMessage(303), code); /* "Command line error D%d : " */
     va_start(ap, code);
-    WriteTextV(STDERR_FILENO, GetMessageInFile(gApp_data->errorStringPath, code), ap);
+    message = GetMessageInFile(gApp_data->errorStringPath, code);
+    WriteTextV(STDERR_FILENO, message, ap);
     va_end(ap);
     WriteTextF(STDERR_FILENO, "\n");
     ExitCL(2);
@@ -838,8 +841,8 @@ void EmitWarningF(int code, ...)
     WriteTextF(STDERR_FILENO, "\n");
 }
 
-// FUNCTION: CL 0x004030c
-void PrintLogoString(void)
+// FUNCTION: CL 0x004030c6
+void PrintLogoString(BOOL unused)
 {
     WriteTextF(STDERR_FILENO, GetErrorMessage(306), "10.20.6166");
     WriteTextF(STDERR_FILENO, GetErrorMessage(307));
@@ -848,7 +851,7 @@ void PrintLogoString(void)
 // FUNCTION: CL 0x00402e48
 void FatalUsageError()
 {
-    PrintLogoString();
+    PrintLogoString(FALSE);
     WriteTextF(STDOUT_FILENO, GetErrorMessage(305));
     exit(0);
 }
@@ -1064,7 +1067,7 @@ char *GetFileDirectory(const char *path)
 
     _splitpath(path, drive, dir, basename, ext);
     len_dir = strlen(dir);
-    if (len_dir > 0 && dir[len_dir - 1] != '\\' && dir[len_dir - 1] != ';' && dir[len_dir - 1] != '/') {
+    if (len_dir > 0 && dir[len_dir - 1] != '\\' && dir[len_dir - 1] != ':' && dir[len_dir - 1] != '/') {
         dir[len_dir + 0] = '\\';
         dir[len_dir + 1] = '\0';
     }
@@ -1129,20 +1132,20 @@ char *JoinPathInExeSearchPath(const char *dirpath, const char *filename)
     strcpy(buffer, dirpath);
     strcat(buffer, filename);
     if (_access(buffer, R_OK) == 0) {
-        filename = buffer;
-    } else {
-        buffer[0] = '.';
-        buffer[1] = '\\';
-        buffer[2] = '\0';
-        strcat(buffer, filename);
-        if (_access(buffer, R_OK) == 0) {
-            filename = buffer;
-        } else {
-            if (FindFileInPATH(filename, buffer, sizeof(buffer)) != 0) {
-                filename = buffer;
-            }
-        }
+        return SafeStrDup(buffer);
     }
+
+    buffer[0] = '.';
+    buffer[1] = '\\';
+    buffer[2] = '\0';
+    strcat(buffer, filename);
+    if (_access(buffer, R_OK) == 0) {
+        return SafeStrDup(buffer);
+    }
+    if (FindFileInPATH(filename, buffer, sizeof(buffer)) != 0) {
+        return SafeStrDup(buffer);
+    }
+
     return SafeStrDup(filename);
 }
 
@@ -1393,16 +1396,13 @@ void CreateTempDir(tApp_data *app_data)
 // FUNCTION: CL 0x00402387
 BOOL StringStartsWith(const char *start, const char *str)
 {
-    while (1) {
-        if (*start == '\0') {
-            return TRUE;
-        }
-        if (*start != *str) {
+    while (*start != '\0') {
+        if (*start++ != *str++) {
             return FALSE;
         }
-        start++;
-        str++;
     }
+
+    return TRUE;
 }
 
 // FUNCTION: CL 0x0040218e
@@ -1478,7 +1478,7 @@ int CalculateOptionMatchLength(const tOption_spec *option_spec, const char **arg
     return 0;
 }
 
-// FUNCTION: CL 0040202e
+// FUNCTION: CL 0x0040202e
 const tOption_spec *GetBestOptionSpec(const char **args, int index)
 {
     const tOption_spec *best_match = NULL;
@@ -1534,7 +1534,7 @@ void FreeParsedOption(tParsed_option *opt)
     gUnused_parsed_options = opt;
 }
 
-// FUNCTION: CL 00401fe8
+// FUNCTION: CL 0x00401fe8
 void FreeParsedOptions(tParsed_option *opt)
 {
     while (opt != NULL) {
@@ -1582,7 +1582,7 @@ tParsed_filepath *AllocateParsedFilepath(const char *path, tCompile_filetype fil
 }
 
 // FUNCTION: CL 0x004010a1
-tParsed_filepath *ParseFileArgument(const char *path, tCompile_filetype filetype, undefined2 arg3)
+tParsed_filepath *ParseFileArgument(const char *path, tCompile_filetype filetype, undefined4 arg3)
 {
     tParsed_filepath *result;
     tParsed_filepath **list;
@@ -1700,7 +1700,7 @@ const char *FUN_00401498(const char *spec, char *buffer, const char *key, const 
     static char result_buffer[32];
     const char *result;
 
-    *filename = '\0';
+    *buffer = '\0';
     result = ExtractImpliedSpec(&spec[1], buffer, key);
     result = ExtractImpliedSpec(&result[1], result_buffer, key);
     if (buffer[0] == '\0') {
@@ -1718,7 +1718,6 @@ const char *ReplaceFilenameWithExt(const char *extension_spec, char *path, const
     const char *path_filename;
     char *path_ptr;
 
-    path_filename = FindLastOccurrenceOfAnyCharOf(path, "\\/");
     if (ext_c1 == '<') {
         extension_spec++;
     }
@@ -1944,8 +1943,8 @@ tParsed_option *ExtractOptionFromArgs(const tOption_spec *option_spec, const cha
 // FUNCTION: CL 0x00401711
 BOOL AreOptionsSimilar(tParsed_option *opt1, tParsed_option *opt2)
 {
-    size_t l1;
-    size_t l2;
+    int l1;
+    int l2;
 
     if (!(strcmp(opt1->arg_keyonly, "?") == 0 || strcmp(opt2->arg_keyonly, "?") == 0 ||
                 strcmp(opt1->arg_keyonly, opt2->arg_keyonly) == 0)) {
@@ -1966,14 +1965,14 @@ BOOL AreOptionsSimilar(tParsed_option *opt1, tParsed_option *opt2)
     }
     l1 = strlen(opt1->arg_value);
     l2 = strlen(opt2->arg_value);
-    if (l1 > 0 && opt1->arg_value[l1 - 1] == '?') {
+    if (l1 >= 1 && opt1->arg_value[l1 - 1] == '?') {
         if (strncmp(opt1->arg_value, opt2->arg_value, l1 - 1) == 0) {
             return TRUE;
         } else {
             return FALSE;
         }
     }
-    if (l2 > 0 && opt2->arg_value[l2 - 1] == '?') {
+    if (l2 >= 1 && opt2->arg_value[l2 - 1] == '?') {
         if (strncmp(opt1->arg_value, opt2->arg_value, l2 - 1) == 0) {
             return TRUE;
         } else {
@@ -2278,45 +2277,44 @@ void ParseSingleArgOption(const tSingle_arg_spec *spec, const char *arg)
     char buffer[32];
     const char *argv[2];
     size_t buffer_pos;
-    const char *arg_value;
 
     argv[0] = buffer;
     argv[1] = NULL;
-    buffer[0] = arg[0];
+    buffer[0] = *arg++;
     buffer_pos = strlen(spec->key);
-    memcpy(&buffer[1], &arg[1], buffer_pos);
-    arg_value = arg + 1 + buffer_pos;
+    memcpy(&buffer[1], arg, buffer_pos);
+    arg += buffer_pos;
     buffer_pos += 1;
     if (buffer[1] == 'O') {
-        if (_mbsstr((const unsigned char *) arg_value, (const unsigned char *) "y1") != NULL) {
+        if (_mbsstr((const unsigned char *) arg, (const unsigned char *) "y1") != NULL) {
             EmitWarningF(4099, "Oy1", "Oy-");
-        } else if (_mbsstr((const unsigned char *) arg_value, (const unsigned char *) "y2") != NULL) {
+        } else if (_mbsstr((const unsigned char *) arg, (const unsigned char *) "y2") != NULL) {
             EmitWarningF(4099, "Oy2", "Oy");
         }
     }
-    while (*arg_value != '\0') {
-        const char *valuespec = strchr(spec->valuespec, *arg_value);
+    while (*arg != '\0') {
+        const char *valuespec = strchr(spec->valuespec, *arg);
         char *buffer_ptr;
         int multi_arg;
 
-        buffer[buffer_pos] = *arg_value++;
-        buffer_ptr = &buffer[buffer_pos + 1];
+        buffer_ptr = &buffer[buffer_pos];
+        *buffer_ptr++ = *arg++;
         if (valuespec != NULL) {
             valuespec++;
             for (; *valuespec != ':' && *valuespec != '\0'; valuespec++) {
                 if (*valuespec == '#') {
-                    while (isdigit(*arg_value)) {
-                        *buffer_ptr++ = *arg_value++;
+                    while (isdigit(*arg)) {
+                        *buffer_ptr++ = *arg++;
                     }
                 } else if (*valuespec == '*') {
-                    while (*arg_value != '\0') {
-                        *buffer_ptr++ = *arg_value++;
+                    while (*arg != '\0') {
+                        *buffer_ptr++ = *arg++;
                     }
                     break;
-                } else if (*arg_value == *valuespec) {
-                    *buffer_ptr++ = *arg_value++;
-                    continue;
+                } else if (*arg != *valuespec) {
+                    break;
                 }
+                *buffer_ptr++ = *arg++;
             }
         }
         *buffer_ptr = '\0';
@@ -2378,7 +2376,7 @@ void ParseResponseFile(const char *path)
         FatalError(2022, path);
     }
     line = SafeMalloc(1024);
-    while (fgets(line, sizeof(line) - 1, f) != NULL) {
+    while (fgets(line, 1023, f) != NULL) {
         size_t len_line = strlen(line);
         char **args;
 
@@ -2461,9 +2459,8 @@ int OnLinkCallback(const char **args, int *index)
     }
     new_index = *index + 1;
     while (args[new_index] != NULL) {
-        const char *link_arg = args[new_index];
-        AppendParsedOption(&gApp_data->field_0x0, AllocateParsedOption(link_arg, NULL, "L", 0x8));
-        AppendParsedOption(&gApp_data->field_0x0, AllocateParsedOption(link_arg, NULL, "C", 0x8));
+        AppendParsedOption(&gApp_data->field_0x0, AllocateParsedOption(args[new_index], NULL, "L", 0x8));
+        AppendParsedOption(&gApp_data->field_0x0, AllocateParsedOption(args[new_index], NULL, "C", 0x8));
         new_index += 1;
     }
     *index = new_index;
@@ -2509,7 +2506,7 @@ int OnTpCallback(const char **args, int *index)
 // FUNCTION: CL 0x0040301b
 int OnToCallback(const char **args, int *index)
 {
-    FUN_00403069("Tp", args, index, eFiletype_obj);
+    FUN_00403069("To", args, index, eFiletype_obj);
     return 0;
 }
 
@@ -2586,7 +2583,7 @@ void OnboOption(tParsed_option *option)
     if (option->arg_value[0] == '\0') {
         return;
     }
-    if (gCount_compiler_file_inputs > 1) {
+    if (gCount_compiler_file_inputs >= 2) {
         char *arg1_space;
         char *arg2_space;
         const char *arg2;
@@ -2659,6 +2656,7 @@ void OnbuOption(tParsed_option *option)
 // FUNCTION: CL 0x00402a59
 void OnArgumentLDorLDd(tParsed_option *option)
 {
+    // GLOBAL: CL 0x0040a064
     static BOOL ld_argument_given = TRUE;
 
     (void) option;
@@ -2702,10 +2700,7 @@ int GetTerminalHeight()
         return 25;
     }
     height = consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1;
-    if (height <= 0) {
-        return 1;
-    }
-    return height;
+    return (height <= 0) ? 1 : height;
 }
 
 // FUNCTION: CL 0x00405836
@@ -2788,10 +2783,10 @@ tCompiler_input_file *GetCompilerInputFiles(tApp_data *app_data)
     for (parsed_filepath = app_data->field_0x10; parsed_filepath != NULL; parsed_filepath = parsed_filepath->next) {
         if (gFiletype_specs[parsed_filepath->filetype].stage == eInput_compiler) {
             tCompiler_input_file *compiler_input = AllocateCompilerInputFile(parsed_filepath);
-            if (result != NULL) {
-                last_input->next = compiler_input;
-            } else {
+            if (result == NULL) {
                 result = compiler_input;
+            } else {
+                last_input->next = compiler_input;
             }
             last_input = compiler_input;
         }
@@ -2900,7 +2895,7 @@ char *FUN_00403b70(tApp_data *app_data)
     return arg_string;
 }
 
-// FUNCTION: CL 00403dc6
+// FUNCTION: CL 0x00403dc6
 tCompiler_input_file *FUN_00403dc6(DWORD *arg1)
 {
     (void) arg1;
@@ -3021,17 +3016,19 @@ tCompiler_input_file *FUN_004038f0(tApp_data *app_data, MRState *mr_state)
 // FUNCTION: CL 0x00404069
 tCompiler_input_file *ReverseCompilerInputFile(tCompiler_input_file *input_file)
 {
-    tCompiler_input_file *new_head;
-    tCompiler_input_file *new_next;
-
-    new_next = new_head = NULL;
-    while (input_file != NULL) {
-        new_head = input_file;
-        input_file = new_head->next;
-        new_head->next = new_next;
-        new_next = new_head;
+    tCompiler_input_file *prev, *cur, *next;
+    
+    prev = NULL;
+    cur = input_file;
+    
+    while (cur) {
+        next = cur->next;
+        cur->next = prev;
+        prev = cur;
+        cur = next;
     }
-    return new_head;
+
+    return prev;
 }
 
 // FUNCTION: CL 0x00404e5c
@@ -3050,7 +3047,7 @@ size_t LengthOfEscapedPath(const char *path)
 {
     int count_backslash = 0;
     size_t len = 0;
-    bool space = false;
+    BOOL space = false;
     while (*path != '\0') {
         if (_ismbcspace(*path)) {
             space = true;
@@ -3140,7 +3137,7 @@ size_t LengthOfFormatedArgument(const char *text, tApp_data *app_data)
 char *EscapePath(char *dest, const char *path)
 {
     int count_backslash = 0;
-    bool space = false;
+    BOOL space = false;
     char *write_ptr = dest;
     while (*path != '\0') {
         if (_ismbcspace(*path)) {
@@ -3165,10 +3162,9 @@ char *EscapePath(char *dest, const char *path)
         memmove(&dest[1], dest, write_ptr - dest);
         _mbccpy((unsigned char *) dest, (unsigned char *) "\"");
         write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
-        while (count_backslash > 0) {
+        while (count_backslash-- > 0) {
             _mbccpy((unsigned char *) write_ptr, (unsigned char *) "\\");
             write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
-            count_backslash -= 1;
         }
         _mbccpy((unsigned char *) write_ptr, (unsigned char *) "\"");
         write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
@@ -3501,13 +3497,13 @@ void CreateCOFFLinkerResponseFile(tApp_data *app_data)
     compiler_stage_spec = app_data->compiler_stage_spec;
     strcpy(buffer1, app_data->tempPath);
     strcat(buffer1, "lk");
-    if (!gOption_Bz) {
+    if (gOption_Bz) {
+        f = NULL;
+    } else {
         f = fopen(buffer1, "w");
         if (f == NULL) {
             FatalError(2018);
         }
-    } else {
-        f = NULL;
     }
     for (option = app_data->field_0x0; option != NULL; option = option->next) {
         if (FUN_004010e8(option, compiler_stage_spec)) {
@@ -3726,7 +3722,7 @@ int FUN_00404471(tApp_data *app_data)
     arguments_ptr = SafeStrCpyOrKeep(&arguments_ptr[1], "@");
     arguments_ptr = SafeStrCpyOrKeep(arguments_ptr, app_data->tempPath);
     SafeStrCpyOrKeep(arguments_ptr, "lk");
-    if (strlen(buffer) > sizeof(buffer) - 1) {
+    if (strlen(buffer) >= sizeof(buffer)) {
         FatalError(0);
     }
     argv = CreateArgArray(buffer, 0);
@@ -3929,7 +3925,7 @@ int main(int argc, char *argv[])
     if (!ArgumentsContainNologo(argv + 1, argc - 1) && !ArgumentsContainNologo(cl_args, count_cl_args) &&
             !ArgumentsContainNologo(cl__args, count_cl__args)) {
         gShouldPrintLogoString = FALSE;
-        PrintLogoString();
+        PrintLogoString(gShouldPrintLogoString);
     }
     ParseArguments(gBuiltInCompileOptions, GetArgsArraySize(gBuiltInCompileOptions));
     ParseArguments(gBuiltInCompileDefinitions, GetArgsArraySize(gBuiltInCompileDefinitions));
