@@ -690,17 +690,20 @@ char *ErrorVSprintf(size_t *len, const char *format, va_list ap)
     char *write_ptr = buffer;
     const char *src;
     while (*format != '\0') {
-        if (_mbsncmp((unsigned char *) format, (unsigned char *) "%", 1) == 0) {
-            format = _mbsinc((unsigned char *) format);
+        if (_mbsncmp(format, "%", 1) != 0) {
+            _mbccpy(write_ptr, format);
+            write_ptr = _mbsinc(write_ptr);
+        } else {
+            format = _mbsinc(format);
             switch (*format) {
             case 'c':
                 *write_ptr = (char) va_arg(ap, int);
-                write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
+                write_ptr = _mbsinc(write_ptr);
                 break;
             case 'd':
             case 'x':
                 write_ptr += dtostr(va_arg(ap, int), write_ptr,
-                        _mbsncmp((unsigned char *) format, (unsigned char *) "d", 1) == 0 ? 10 : 0);
+                        _mbsncmp(format, "d", 1) == 0 ? 10 : 16);
                 break;
             case 's':
                 src = va_arg(ap, const char *);
@@ -708,16 +711,14 @@ char *ErrorVSprintf(size_t *len, const char *format, va_list ap)
                 write_ptr += strlen(src);
                 break;
             default:
-                _mbccpy((unsigned char *) write_ptr, (unsigned char *) "%");
-                _mbccpy(_mbsinc((unsigned char *) write_ptr), (unsigned char *) format);
-                write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
+                _mbccpy(write_ptr, "%");
+                write_ptr = _mbsinc(write_ptr);
+                _mbccpy(write_ptr, format);
+                write_ptr = _mbsinc(write_ptr);
                 break;
             }
-        } else {
-            _mbccpy((unsigned char *) write_ptr, (unsigned char *) format);
-            write_ptr = (char *) _mbsinc((unsigned char *) write_ptr);
         }
-        format = _mbsinc((unsigned char *) format);
+        format = _mbsinc(format);
     }
     *write_ptr = '\0';
     *len = write_ptr - buffer;
