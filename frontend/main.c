@@ -1044,7 +1044,7 @@ int GetArgsArraySize(const char **args)
 }
 
 // FUNCTION: CL 0x004025f0
-char *GetExecutableFilePath()
+char *GetExecutableFilePath(char *argv0)
 {
 #ifdef _MSC_VER
     return (char *) *__p__pgmptr();
@@ -3896,127 +3896,133 @@ int main(int argc, char *argv[])
     const char *msc_ide_flags;
     const char *cl;
     const char *cl_;
-    char **msc_ide_flags_args;
-    int count_msc_ide_flags_args;
-    char **cl_args;
-    int count_cl_args;
-    char **cl__args;
-    int count_cl__args;
-    tParsed_option *opt;
-    tParsed_option *unkopt;
-    tParsed_filepath *input_path;
-    tCompile_filetype default_filetype;
+    __try {
+        char **msc_ide_flags_args;
+        int count_msc_ide_flags_args;
+        char **cl_args;
+        int count_cl_args;
+        char **cl__args;
+        int count_cl__args;
+        tParsed_option *opt;
+        tParsed_option *unkopt;
+        tParsed_filepath *input_path;
+        tCompile_filetype default_filetype;
 
-    InstallConsoleHandlers();
-    msc_ide_flags = getenv("_MSC_IDE_FLAGS");
-    cl = getenv("CL");
-    cl_ = getenv("_CL_");
-    msc_ide_flags_args = CreateArgArray(msc_ide_flags, TRUE);
-    count_msc_ide_flags_args = GetArgsArraySize((const char **) msc_ide_flags_args);
-    cl_args = CreateArgArray(cl, TRUE);
-    count_cl_args = GetArgsArraySize((const char **) cl_args);
-    cl__args = CreateArgArray(cl_, TRUE);
-    count_cl__args = GetArgsArraySize((const char **) cl__args);
-    argv[0] = GetExecutableFilePath();
-    InitAppPaths(argv[0], gApp_data);
-    if (argc == 1 && count_cl_args == 0) {
-        FatalUsageError();
-    }
-    if (!ArgumentsContainNologo(argv + 1, argc - 1) && !ArgumentsContainNologo(cl_args, count_cl_args) &&
-            !ArgumentsContainNologo(cl__args, count_cl__args)) {
-        gShouldPrintLogoString = FALSE;
-        PrintLogoString(gShouldPrintLogoString);
-    }
-    ParseArguments(gBuiltInCompileOptions, GetArgsArraySize(gBuiltInCompileOptions));
-    ParseArguments(gBuiltInCompileDefinitions, GetArgsArraySize(gBuiltInCompileDefinitions));
-    for (opt = gApp_data->field_0x0; opt != NULL; opt = opt->next) {
-        opt->field_0x4 |= 0x1;
-    }
-    for (opt = gApp_data->field_0x4; opt != NULL; opt = opt->next) {
-        opt->field_0x4 |= 0x1;
-    }
-    gConsider_hat_options = FALSE;
-    if (count_msc_ide_flags_args) {
-        ParseArguments((const char **) msc_ide_flags_args, count_msc_ide_flags_args);
-    }
-    if (count_cl_args > 0) {
-        ParseArguments((const char **) cl_args, count_cl_args);
-    }
-    if (argc > 1) {
-        ParseArguments((const char **) &argv[1], argc - 1);
-    }
-    if (count_cl__args > 0) {
-        ParseArguments((const char **) cl__args, count_cl__args);
-    }
-    if (gPrinted_cl) {
-        WriteTextF(STDERR_FILENO, "\n");
-    }
-    FUN_00402bc0();
-    DumpAppData();
-    RunOptionActions(gApp_data);
-    CreateTempDir(gApp_data);
-    if (gPrintPaginatedClMessage) {
-        PrintPaginatedFileAndExit(JoinPathInExeSearchPath(gApp_data->exeDirectory, "cl32.msg"));
-    }
-    for (unkopt = gUnknown_options; unkopt != NULL; unkopt = unkopt->next) {
-        if (unkopt->arg_value != NULL) {
-            char *joinedstr = SafeMalloc(strlen(unkopt->arg_keyonly) + 1 + strlen(unkopt->arg_value) + 1);
-            SafeStrCpyOrKeep(SafeStrCpyOrKeep(joinedstr, unkopt->arg_keyonly), unkopt->arg_value);
-            EmitWarningF(4002, joinedstr);
-            SafeFree(joinedstr);
-        } else {
-            EmitWarningF(4002, unkopt->arg_keyonly);
+        InstallConsoleHandlers();
+        msc_ide_flags = getenv("_MSC_IDE_FLAGS");
+        cl = getenv("CL");
+        cl_ = getenv("_CL_");
+        msc_ide_flags_args = CreateArgArray(msc_ide_flags, TRUE);
+        count_msc_ide_flags_args = GetArgsArraySize((const char **) msc_ide_flags_args);
+        cl_args = CreateArgArray(cl, TRUE);
+        count_cl_args = GetArgsArraySize((const char **) cl_args);
+        cl__args = CreateArgArray(cl_, TRUE);
+        count_cl__args = GetArgsArraySize((const char **) cl__args);
+        argv[0] = GetExecutableFilePath(argv[0]);
+        InitAppPaths(argv[0], gApp_data);
+        if (argc == 1 && count_cl_args == 0) {
+            FatalUsageError();
         }
-    }
-    if (gApp_data->field_0x10 == NULL) {
-        FatalError(2003);
-    }
-    if (gOption_bt == NULL) {
-        default_filetype = eFiletype_none;
-    } else {
-        switch (*gOption_bt) {
-        case 'C':
-            default_filetype = eFiletype_c;
-            break;
-        case 'O':
-            default_filetype = eFiletype_obj;
-            break;
-        case 'P':
-            default_filetype = eFiletype_cpp;
-            break;
-        default:
-            default_filetype = eFiletype_obj;
-            break;
+        if (!ArgumentsContainNologo(argv + 1, argc - 1) && !ArgumentsContainNologo(cl_args, count_cl_args) &&
+                !ArgumentsContainNologo(cl__args, count_cl__args)) {
+            gShouldPrintLogoString = FALSE;
+            PrintLogoString(gShouldPrintLogoString);
         }
-    }
-    for (input_path = gApp_data->field_0x10; input_path != NULL; input_path = input_path->next) {
-        const tFiletype_compiler_spec *cspec;
-
-        if (default_filetype != eFiletype_none && !input_path->field_0xc) {
-            input_path->filetype = default_filetype;
-            input_path->field_0xc = 1;
-        } else if (input_path->filetype == eFiletype_none) {
-            if (gUnknownFilesAreC) {
-                input_path->filetype = eFiletype_c;
+        ParseArguments(gBuiltInCompileOptions, GetArgsArraySize(gBuiltInCompileOptions));
+        ParseArguments(gBuiltInCompileDefinitions, GetArgsArraySize(gBuiltInCompileDefinitions));
+        for (opt = gApp_data->field_0x0; opt != NULL; opt = opt->next) {
+            opt->field_0x4 |= 0x1;
+        }
+        for (opt = gApp_data->field_0x4; opt != NULL; opt = opt->next) {
+            opt->field_0x4 |= 0x1;
+        }
+        gConsider_hat_options = FALSE;
+        if (count_msc_ide_flags_args > 0) {
+            ParseArguments((const char **) msc_ide_flags_args, count_msc_ide_flags_args);
+        }
+        if (count_cl_args > 0) {
+            ParseArguments((const char **) cl_args, count_cl_args);
+        }
+        if (argc > 1) {
+            ParseArguments((const char **) &argv[1], argc - 1);
+        }
+        if (count_cl__args > 0) {
+            ParseArguments((const char **) cl__args, count_cl__args);
+        }
+        if (gPrinted_cl) {
+            WriteTextF(STDERR_FILENO, "\n");
+        }
+        FUN_00402bc0();
+        DumpAppData();
+        RunOptionActions(gApp_data);
+        CreateTempDir(gApp_data);
+        if (gPrintPaginatedClMessage) {
+            PrintPaginatedFileAndExit(JoinPathInExeSearchPath(gApp_data->exeDirectory, "cl32.msg"));
+        }
+        for (unkopt = gUnknown_options; unkopt != NULL; unkopt = unkopt->next) {
+            if (unkopt->arg_value != NULL) {
+                char *joinedstr = SafeMalloc(strlen(unkopt->arg_keyonly) + 1 + strlen(unkopt->arg_value) + 1);
+                SafeStrCpyOrKeep(SafeStrCpyOrKeep(joinedstr, unkopt->arg_keyonly), unkopt->arg_value);
+                EmitWarningF(4002, joinedstr);
+                SafeFree(joinedstr);
             } else {
-                input_path->filetype = eFiletype_obj;
-                EmitWarningF(4024, input_path->path);
+                EmitWarningF(4002, unkopt->arg_keyonly);
             }
         }
-        for (cspec = gFiletype_specs[input_path->filetype].compiler_specs; cspec->compiler_filename != NULL; cspec++) {
-            if (cspec->field_0xc) {
+        if (gApp_data->field_0x10 == NULL) {
+            FatalError(2003);
+        }
+        if (gOption_bt == NULL) {
+            default_filetype = eFiletype_none;
+        } else {
+            switch (*gOption_bt) {
+            default:
+                default_filetype = eFiletype_obj;
+                break;
+            case 'C':
+                default_filetype = eFiletype_c;
+                break;
+            case 'O':
+                default_filetype = eFiletype_obj;
+                break;
+            case 'P':
+                default_filetype = eFiletype_cpp;
                 break;
             }
         }
-        if (!cspec->field_0xc) {
-            EmitWarningF(4027, input_path->path);
+        for (input_path = gApp_data->field_0x10; input_path != NULL; input_path = input_path->next) {
+            const tFiletype_compiler_spec *cspec;
+
+            if (default_filetype != eFiletype_none && !input_path->field_0xc) {
+                input_path->filetype = default_filetype;
+                input_path->field_0xc = 1;
+            } else if (input_path->filetype == eFiletype_none) {
+                if (gUnknownFilesAreC) {
+                    input_path->filetype = eFiletype_c;
+                } else {
+                    input_path->filetype = eFiletype_obj;
+                    EmitWarningF(4024, input_path->path);
+                }
+            }
+            for (cspec = gFiletype_specs[input_path->filetype].compiler_specs; cspec->compiler_filename != NULL; cspec++) {
+                if (cspec->field_0xc) {
+                    break;
+                }
+            }
+            if (!cspec->field_0xc) {
+                EmitWarningF(4027, input_path->path);
+            }
+        }
+        RedirectStdErrToStdOut();
+        FUN_004034c2(gApp_data);
+        gApp_data->field_0x20 = NULL;
+        if (!gAction_performed) {
+            EmitWarningF(4021);
         }
     }
-    RedirectStdErrToStdOut();
-    FUN_004034c2(gApp_data);
-    gApp_data->field_0x20 = NULL;
-    if (!gAction_performed) {
-        EmitWarningF(4021);
+    __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
+        FatalError(2030, argv[0]);
     }
+
     ExitCL(gExit_failure ? 2 : 0);
 }
