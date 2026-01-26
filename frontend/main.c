@@ -270,8 +270,7 @@ BOOL BatchPasses = FALSE;
 context_s *Context = &CX;
 
 // GLOBAL: CL 0x0040a038
-passinfo_s PassInfo =
-{
+passinfo_s PassInfo = {
     NULL,
     "cl.err",
     NULL,
@@ -352,8 +351,7 @@ passinfo_s C_passes[] = {
 };
 
 // GLOBAL: CL 0x0040a128
-passinfo_s Cxx_passes[] =
-{
+passinfo_s Cxx_passes[] = {
     {
         "c1xx.exe",
         "c1.err",
@@ -381,8 +379,7 @@ passinfo_s Cxx_passes[] =
 };
 
 // GLOBAL: CL 0x0040a168
-passinfo_s Link_passes[] =
-{
+passinfo_s Link_passes[] = {
     {
         "link386.exe",
         NULL,
@@ -558,15 +555,15 @@ void validate_arg(const char *optkey, char *optval, const char *optspec)
 
     if (optspec[0] == 'x' && optval[0] == '0') {
         switch (optval[1]) {
-            case 'D':
-            case 'T':
-            case 'd':
-            case 't':
-                optval_ptr = &optval[2];
-                break;
-            default:
-                radix = 0;
-                break;
+        case 'D':
+        case 'T':
+        case 'd':
+        case 't':
+            optval_ptr = &optval[2];
+            break;
+        default:
+            radix = 0;
+            break;
         }
     }
     opt_intvalue = strtoul(optval_ptr, &end_ptr, radix);
@@ -624,7 +621,7 @@ flag_s *domatch(const form_s *option_spec, const char **args, int *index)
         optkey_spec_ptr += 1;
     }
     for (arg += 1; *optkey_spec_ptr != '\0' && *optkey_spec_ptr != ':' && *optkey_spec_ptr != '!';
-         optkey_spec_ptr += 1) {
+            optkey_spec_ptr += 1) {
         if (*arg != *optkey_spec_ptr) {
             cmderr(0);
         }
@@ -836,24 +833,24 @@ flag_s *expand(const char *implied_spec, const flag_s *option)
             break;
         }
         if (*implied_spec_ptr != '=' && *implied_spec_ptr != '#' && *implied_spec_ptr != '-' &&
-            *implied_spec_ptr != '~') {
+                *implied_spec_ptr != '~') {
             char *speckey_ptr = speckey;
             while (*implied_spec_ptr != '=' && *implied_spec_ptr != '#' && *implied_spec_ptr != '-' &&
-                   *implied_spec_ptr != '~') {
+                    *implied_spec_ptr != '~') {
                 *speckey_ptr++ = *implied_spec_ptr++;
             }
             *speckey_ptr = '\0';
         }
         switch (*implied_spec_ptr) {
-            case '#':
-                specflag = 0x8;
-                break;
-            case '-':
-                specflag = 0x1;
-                break;
-            case '~':
-                specflag = 0x20;
-                break;
+        case '#':
+            specflag = 0x8;
+            break;
+        case '-':
+            specflag = 0x1;
+            break;
+        case '~':
+            specflag = 0x20;
+            break;
         }
         implied_spec = doexpand(&implied_spec_ptr[1], implied_argkey, option->base);
         if (*implied_spec == '!' || *implied_spec == ':') {
@@ -892,8 +889,7 @@ BOOL flagmatch(flag_s *opt1, flag_s *opt2)
     size_t l1;
     size_t l2;
 
-    if (!(strcmp(opt1->base, "?") == 0 || strcmp(opt2->base, "?") == 0 ||
-          strcmp(opt1->base, opt2->base) == 0)) {
+    if (!(strcmp(opt1->base, "?") == 0 || strcmp(opt2->base, "?") == 0 || strcmp(opt1->base, opt2->base) == 0)) {
         return FALSE;
     }
     if (opt1->arg == NULL) {
@@ -943,16 +939,14 @@ void dump_context()
     opt = Context->flags;
     for (int i = 0; opt != NULL; i++, opt = opt->next) {
         const char *q = opt->arg ? "'" : "";
-        printf(" [%2d] = { base='%s', arg=%s%s%s, opt=%s},\n", i, opt->base, q, opt->arg, q,
-                opt->field_0x8);
+        printf(" [%2d] = { base='%s', arg=%s%s%s, opt=%s},\n", i, opt->base, q, opt->arg, q, opt->field_0x8);
     }
     printf("}\n");
     printf("Context->switches = {\n");
     opt = Context->switches;
     for (int i = 0; opt != NULL; i++, opt = opt->next) {
         const char *q = opt->arg ? "'" : "";
-        printf(" [%2d] = { opt='%s', arg=%s%s%s, base=%s},\n", i, opt->base, q, opt->arg, q,
-                opt->base);
+        printf(" [%2d] = { opt='%s', arg=%s%s%s, base=%s},\n", i, opt->base, q, opt->arg, q, opt->base);
     }
     printf("}\n");
 }
@@ -983,79 +977,79 @@ int main(int argc, char *argv[])
     __try {
 #endif
 
-    setbuf(stdout, NULL);
-    setbuf(stderr, NULL);
+        setbuf(stdout, NULL);
+        setbuf(stderr, NULL);
 
-    OS_Init();
-    msc_ide_flags = getenv("_MSC_IDE_FLAGS");
-    cl = getenv("CL");
-    cl_ = getenv("_CL_");
-    msc_ide_flags_args = sztoszv(msc_ide_flags, TRUE);
-    count_msc_ide_flags_args = argcount((const char **) msc_ide_flags_args);
-    cl_args = sztoszv(cl, TRUE);
-    count_cl_args = argcount((const char **) cl_args);
-    cl__args = sztoszv(cl_, TRUE);
-    count_cl__args = argcount((const char **) cl__args);
-    argv[0] = fullccpath();
-    build_context(argv[0], Context);
-    if (argc == 1 && count_cl_args == 0) {
-        usage();
-    }
-    if (!early_switch_scan(argv + 1, argc - 1) && !early_switch_scan(cl_args, count_cl_args) &&
-        !early_switch_scan(cl__args, count_cl__args)) {
-        Nologo = FALSE;
-        LOGO();
-    }
-    templates(DefaultOptions, argcount(DefaultOptions));
-    templates(DefaultMacros, argcount(DefaultMacros));
-    /* mark as defaults */
-    for (opt = Context->flags; opt != NULL; opt = opt->next) {
-        opt->info |= 0x1;
-    }
-    for (opt = Context->switches; opt != NULL; opt = opt->next) {
-        opt->info |= 0x1;
-    }
-    DefPhase = FALSE;
-    if (count_msc_ide_flags_args) {
-        templates((const char **) msc_ide_flags_args, count_msc_ide_flags_args);
-    }
-    if (count_cl_args > 0) {
-        templates((const char **) cl_args, count_cl_args);
-    }
-    if (argc > 1) {
-        templates((const char **) &argv[1], argc - 1);
-    }
-    if (count_cl__args > 0) {
-        templates((const char **) cl__args, count_cl__args);
-    }
-    if (RespEcho) {
-        print(STDERR_FILENO, "\n");
-    }
-    check_required();
-    dump_context();
-    cc_switches(Context);
-    maketempdir(Context);
-    if (Help) {
-        help(findpass(Context->exedir, "cl32.msg"));
-    }
-    Help = 0;
-    for (unkopt = Unknown_; unkopt != NULL; unkopt = unkopt->next) {
-        if (unkopt->arg != NULL) {
-            char *joinedstr = xnew(strlen(unkopt->base) + 1 + strlen(unkopt->arg) + 1);
-            append(append(joinedstr, unkopt->base), unkopt->arg);
-            cmdwarn(4002, joinedstr);
-            xfree(joinedstr);
-        } else {
-            cmdwarn(4002, unkopt->base);
+        OS_Init();
+        msc_ide_flags = getenv("_MSC_IDE_FLAGS");
+        cl = getenv("CL");
+        cl_ = getenv("_CL_");
+        msc_ide_flags_args = sztoszv(msc_ide_flags, TRUE);
+        count_msc_ide_flags_args = argcount((const char **) msc_ide_flags_args);
+        cl_args = sztoszv(cl, TRUE);
+        count_cl_args = argcount((const char **) cl_args);
+        cl__args = sztoszv(cl_, TRUE);
+        count_cl__args = argcount((const char **) cl__args);
+        argv[0] = fullccpath();
+        build_context(argv[0], Context);
+        if (argc == 1 && count_cl_args == 0) {
+            usage();
         }
-    }
-    if (Context->field_0x10 == NULL) {
-        cmderr(2003);
-    }
-    if (ForceType == NULL) {
-        default_filetype = SOURCE_UNKNOWN;
-    } else {
-        switch (*ForceType) {
+        if (!early_switch_scan(argv + 1, argc - 1) && !early_switch_scan(cl_args, count_cl_args) &&
+                !early_switch_scan(cl__args, count_cl__args)) {
+            Nologo = FALSE;
+            LOGO();
+        }
+        templates(DefaultOptions, argcount(DefaultOptions));
+        templates(DefaultMacros, argcount(DefaultMacros));
+        /* mark as defaults */
+        for (opt = Context->flags; opt != NULL; opt = opt->next) {
+            opt->info |= 0x1;
+        }
+        for (opt = Context->switches; opt != NULL; opt = opt->next) {
+            opt->info |= 0x1;
+        }
+        DefPhase = FALSE;
+        if (count_msc_ide_flags_args) {
+            templates((const char **) msc_ide_flags_args, count_msc_ide_flags_args);
+        }
+        if (count_cl_args > 0) {
+            templates((const char **) cl_args, count_cl_args);
+        }
+        if (argc > 1) {
+            templates((const char **) &argv[1], argc - 1);
+        }
+        if (count_cl__args > 0) {
+            templates((const char **) cl__args, count_cl__args);
+        }
+        if (RespEcho) {
+            print(STDERR_FILENO, "\n");
+        }
+        check_required();
+        dump_context();
+        cc_switches(Context);
+        maketempdir(Context);
+        if (Help) {
+            help(findpass(Context->exedir, "cl32.msg"));
+        }
+        Help = 0;
+        for (unkopt = Unknown_; unkopt != NULL; unkopt = unkopt->next) {
+            if (unkopt->arg != NULL) {
+                char *joinedstr = xnew(strlen(unkopt->base) + 1 + strlen(unkopt->arg) + 1);
+                append(append(joinedstr, unkopt->base), unkopt->arg);
+                cmdwarn(4002, joinedstr);
+                xfree(joinedstr);
+            } else {
+                cmdwarn(4002, unkopt->base);
+            }
+        }
+        if (Context->field_0x10 == NULL) {
+            cmderr(2003);
+        }
+        if (ForceType == NULL) {
+            default_filetype = SOURCE_UNKNOWN;
+        } else {
+            switch (*ForceType) {
             case 'C':
                 default_filetype = SOURCE_C;
                 break;
@@ -1068,37 +1062,37 @@ int main(int argc, char *argv[])
             default:
                 default_filetype = SOURCE_OBJ;
                 break;
+            }
         }
-    }
-    for (input_path = Context->field_0x10; input_path != NULL; input_path = input_path->next) {
-        const passinfo_s *cspec;
+        for (input_path = Context->field_0x10; input_path != NULL; input_path = input_path->next) {
+            const passinfo_s *cspec;
 
-        if (default_filetype != SOURCE_UNKNOWN && !input_path->fixed_type) {
-            input_path->type = default_filetype;
-            input_path->fixed_type = 1;
-        } else if (input_path->type == SOURCE_UNKNOWN) {
-            if (Preprocess) {
-                input_path->type = SOURCE_C;
-            } else {
-                input_path->type = SOURCE_OBJ;
-                cmdwarn(4024, input_path->path);
+            if (default_filetype != SOURCE_UNKNOWN && !input_path->fixed_type) {
+                input_path->type = default_filetype;
+                input_path->fixed_type = 1;
+            } else if (input_path->type == SOURCE_UNKNOWN) {
+                if (Preprocess) {
+                    input_path->type = SOURCE_C;
+                } else {
+                    input_path->type = SOURCE_OBJ;
+                    cmdwarn(4024, input_path->path);
+                }
+            }
+            for (cspec = Sourceinfo[input_path->type].passes; cspec->pass_filename != NULL; cspec++) {
+                if (cspec->is_active) {
+                    break;
+                }
+            }
+            if (!cspec->is_active) {
+                cmdwarn(4027, input_path->path);
             }
         }
-        for (cspec = Sourceinfo[input_path->type].passes; cspec->pass_filename != NULL; cspec++) {
-            if (cspec->is_active) {
-                break;
-            }
+        RedirectStdErrToStdOut();
+        compile(Context);
+        Context->current_source = NULL;
+        if (!Action) {
+            cmdwarn(4021);
         }
-        if (!cspec->is_active) {
-            cmdwarn(4027, input_path->path);
-        }
-    }
-    RedirectStdErrToStdOut();
-    compile(Context);
-    Context->current_source = NULL;
-    if (!Action) {
-        cmdwarn(4021);
-    }
 #ifdef _MSC_VER
     } __finally {
     }
@@ -1285,9 +1279,8 @@ flag_s *conflict(flag_s **list, flag_s *implied_option, flag_s **list_arg3)
         flag_s *list_item;
         for (list_item = *list; list_item != NULL; list_item = list_item->next) {
             if (flagmatch(list_item, implied_option)) {
-                if (list_arg3 != NULL &&
-                    (((implied_option->info & 0x1) && !(list_item->info & 0x21)) ||
-                     ((implied_option->info & 0x20) && !(list_item->info & 0x20)))) {
+                if (list_arg3 != NULL && (((implied_option->info & 0x1) && !(list_item->info & 0x21)) ||
+                                                 ((implied_option->info & 0x20) && !(list_item->info & 0x20)))) {
                     flag_s *o;
 
                     if (list_item->swtch == NULL) {
@@ -1468,8 +1461,8 @@ BOOL early_switch_scan(char **argv, int argc)
                 if (fgets(line, sizeof(line) - 1, f) != NULL) {
                     char *pos_nologo = strstr(line, "nologo");
                     if (pos_nologo != NULL && pos_nologo > line && (pos_nologo[-1] == '-' || pos_nologo[-1] == '/') &&
-                        (pos_nologo == line + 1 || _mbschr((unsigned char *) " \t\"", pos_nologo[-2]) != NULL) &&
-                        (pos_nologo[6] == '\0' || _mbschr((unsigned char *) " \t\"\n", pos_nologo[6]))) {
+                            (pos_nologo == line + 1 || _mbschr(" \t\"", pos_nologo[-2]) != NULL) &&
+                            (pos_nologo[6] == '\0' || _mbschr(" \t\"\n", pos_nologo[6]))) {
                         found = TRUE;
                     }
                 }
@@ -1535,7 +1528,7 @@ void alternate_pass(flag_s *option)
     for (filetype_spec = Sourceinfo; filetype_spec->phase != PHASE_NOPHASE; filetype_spec++) {
         passinfo_s *filetype_compiler_spec;
         for (filetype_compiler_spec = filetype_spec->passes; filetype_compiler_spec->pass_filename != NULL;
-             filetype_compiler_spec++) {
+                filetype_compiler_spec++) {
             if (a0 == '.' || filetype_compiler_spec->id == a0) {
                 filetype_compiler_spec->pass_filename = xstrdup(&option->arg[1]);
             }
@@ -1568,8 +1561,8 @@ void deactivate_passes(flag_s *option)
     for (filetype_spec = Sourceinfo; filetype_spec->phase != PHASE_NOPHASE; filetype_spec++) {
         passinfo_s *filetype_compiler_spec;
         for (filetype_compiler_spec = filetype_spec->passes; filetype_compiler_spec->pass_filename != NULL;
-             filetype_compiler_spec++) {
-            if (a0 == '.' || _mbschr((unsigned char *) option->arg, filetype_compiler_spec->id) != NULL) {
+                filetype_compiler_spec++) {
+            if (a0 == '.' || _mbschr(option->arg, filetype_compiler_spec->id) != NULL) {
                 filetype_compiler_spec->is_active = 0;
             }
         }
@@ -1586,8 +1579,8 @@ void copy_active_pass(flag_s *option)
 
     while (!found && filetype_spec->phase != PHASE_NOPHASE) {
         const passinfo_s *filetype_compiler_spec;
-        for (filetype_compiler_spec = filetype_spec->passes;
-             !found && filetype_compiler_spec->pass_filename != NULL; filetype_compiler_spec++) {
+        for (filetype_compiler_spec = filetype_spec->passes; !found && filetype_compiler_spec->pass_filename != NULL;
+                filetype_compiler_spec++) {
             if (filetype_compiler_spec->id == option->arg[0]) {
                 active = filetype_compiler_spec->is_active;
                 found = true;
@@ -1599,8 +1592,8 @@ void copy_active_pass(flag_s *option)
         filetype_spec = Sourceinfo;
         while (filetype_spec->phase != PHASE_NOPHASE) {
             passinfo_s *filetype_compiler_spec;
-            for (filetype_compiler_spec = filetype_spec->passes;
-                 filetype_compiler_spec->pass_filename != NULL; filetype_compiler_spec++) {
+            for (filetype_compiler_spec = filetype_spec->passes; filetype_compiler_spec->pass_filename != NULL;
+                    filetype_compiler_spec++) {
                 if (filetype_compiler_spec->id == a2) {
                     filetype_compiler_spec->is_active = active;
                 }
@@ -1650,20 +1643,19 @@ void check_compile_collide(flag_s *option)
         const char *arg2;
         const char *end_arg2;
 
-        arg1_space = (char *) _mbschr((unsigned char *) option->arg, ' ');
-        arg2_space = (char *) _mbschr((unsigned char *) arg1_space + 1, ' ');
+        arg1_space = (char *) _mbschr(option->arg, ' ');
+        arg2_space = (char *) _mbschr(arg1_space + 1, ' ');
         *arg2_space = '\0';
         arg2 = arg2_space + 1;
         end_arg2 = arg2;
         for (;;) {
-            char *next_end_arg2 = (char *) _mbsinc((unsigned char *) end_arg2);
+            char *next_end_arg2 = (char *) _mbsinc(end_arg2);
             if (next_end_arg2 == NULL || *next_end_arg2 == '\0') {
                 break;
             }
             end_arg2 = next_end_arg2;
         }
-        if (_mbsstr((unsigned char *) arg2, (unsigned char *) "%b") == NULL &&
-            _mbschr((unsigned char *) "\\/", *end_arg2) == NULL) {
+        if (_mbsstr(arg2, "%b") == NULL && _mbschr("\\/", *end_arg2) == NULL) {
             cmderr(2036, &arg1_space[1], arg2);
         }
     }
@@ -1683,7 +1675,7 @@ void configure_asmlist(flag_s *option)
     if (option->arg[0] == '\0') {
         return;
     }
-    arg_extra = (char *) _mbschr((unsigned char *) option->arg, ' ');
+    arg_extra = (char *) _mbschr(option->arg, ' ');
     if (arg_extra != NULL) {
         *arg_extra = '\0';
         arg_extra += 1;
@@ -1783,21 +1775,21 @@ void cc_switches(context_s *ctx)
             if (opt->base[0] == action->form[0] && strcmp(opt->base, action->form) == 0) {
                 found = true;
                 switch (action->type) {
-                    case CMD_TRUE:
-                        *action->flag = TRUE;
-                        break;
-                    case CMD_FALSE:
-                        *action->flag = FALSE;
-                        break;
-                    case CMD_STRING:
-                        replaca(buffer, opt->arg, ctx);
-                        *action->string = xstrdup(buffer);
-                        break;
-                    case CMD_FUNCTION:
-                        action->function(opt);
-                        break;
-                    default:
-                        break;
+                case CMD_TRUE:
+                    *action->flag = TRUE;
+                    break;
+                case CMD_FALSE:
+                    *action->flag = FALSE;
+                    break;
+                case CMD_STRING:
+                    replaca(buffer, opt->arg, ctx);
+                    *action->string = xstrdup(buffer);
+                    break;
+                case CMD_FUNCTION:
+                    action->function(opt);
+                    break;
+                default:
+                    break;
                 }
             }
             if (found) {
@@ -1830,7 +1822,7 @@ void check_required()
         parent_value = xstrdup(parent->required);
         parent_ptr = parent_value;
         while (1) {
-            char *next_ptr = (char *) _mbschr((unsigned char *) parent_ptr, ';');
+            char *next_ptr = (char *) _mbschr(parent_ptr, ';');
             flag_s *implied1;
             flag_s *implied2;
             flag_s *implied3;
@@ -1916,7 +1908,7 @@ const char *complete_filename(const char *extension_spec, char *path, const char
         path_ptr = concat(path, filename);
     } else {
         path_filename = path;
-        path_ptr = (char *) _mbsrchr((unsigned char *) path_filename, '.');
+        path_ptr = (char *) _mbsrchr(path_filename, '.');
         if (path_ptr == NULL) {
             path_ptr = &path[strlen(path)];
         } else if (ext_c1 != '<') {
@@ -1982,12 +1974,12 @@ int Dargs(const char **args, int *index)
     if (macro_arg == NULL || macro_arg[0] == '\0') {
         cmderr(2004, "D");
     }
-    pos_hash = (char *) _mbschr((unsigned char *) macro_arg, '#');
+    pos_hash = (char *) _mbschr(macro_arg, '#');
     if (pos_hash != NULL) {
         /* FIXME/BUG: this function modifies args ! */
         *pos_hash = '=';
     }
-    pos_assign = (char *) _mbschr((unsigned char *) macro_arg, '=');
+    pos_assign = (char *) _mbschr(macro_arg, '=');
     if (pos_assign == NULL) {
         macro_name_len = strlen(macro_arg);
     } else {

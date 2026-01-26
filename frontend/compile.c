@@ -20,8 +20,7 @@ void acquire_pass(context_s *ctx)
 
         ctx->exepaths[filetype][stage] = compiler_path;
         if (stage_spec->error_filename != NULL) {
-            ctx->errorpaths[filetype][stage] =
-                    findpass(extract_path(compiler_path), stage_spec->error_filename);
+            ctx->errorpaths[filetype][stage] = findpass(extract_path(compiler_path), stage_spec->error_filename);
         }
     }
 }
@@ -99,9 +98,8 @@ void compile(context_s *ctx)
                     next_input = remaining_inputs->next;
                     current_input = remaining_inputs;
                     while (next_input != NULL &&
-                           Sourceinfo[next_input->parsed_file->type].passes ==
-                           filetype_compiler_spec &&
-                           current_input->parsed_file->batch_id < 259) {
+                            Sourceinfo[next_input->parsed_file->type].passes == filetype_compiler_spec &&
+                            current_input->parsed_file->batch_id < 259) {
                         next_input->parsed_file->batch_id = current_input->parsed_file->batch_id + 1;
                         current_input = next_input;
                         next_input = next_input->next;
@@ -256,7 +254,7 @@ worklist_s *init_minrebuild(context_s *ctx, worklist_s *inputs, CAList *mr_state
     arg_string = get_minrebuild_options(ctx);
     for (input = inputs; input != NULL; input = input->next) {
         source_s *parsed_file = input->parsed_file;
-        SRCTARG* srctarg;
+        SRCTARG *srctarg;
 
         ctx->current_source = parsed_file;
         cc_switches(ctx);
@@ -375,7 +373,7 @@ char *get_minrebuild_options(context_s *ctx)
                     if (_fullpath(buffer2, arg_value_ptr, 1024) == NULL) {
                         strcpy(buffer2, option->arg);
                     }
-                    _mbslwr((unsigned char *) buffer2);
+                    _mbslwr(buffer2);
                     arg_value_ptr = buffer2;
                 }
                 strqcpy(buffer1, arg_value_ptr);
@@ -390,7 +388,7 @@ char *get_minrebuild_options(context_s *ctx)
         char *incString = xnew(lenInclude + 6);
         strcpy(incString, "-inc=");
         strqcpy(&incString[5], ctx->include);
-        _mbslwr((unsigned char *) incString);
+        _mbslwr(incString);
         len += lenInclude + 6;
         argv[arg_i] = incString;
     }
@@ -401,11 +399,11 @@ char *get_minrebuild_options(context_s *ctx)
         arg_ptr = append(arg_ptr, argv[arg_i]);
         *arg_ptr++ = ' ';
     }
-#ifdef REMSVC_RECCMP
+# ifdef REMSVC_RECCMP
     arg_ptr[-1] = '\0';
-#else
+# else
     arg_string[len] = '\0';
-#endif
+# endif
     for (arg_i = 0; arg_i < count_arguments; arg_i++) {
         xfree(argv[arg_i]);
     }
@@ -496,7 +494,7 @@ unsigned int compile_worklist(context_s *ctx, worklist_s *input_file)
         if (!do_stage_per_stage || run_on_file) {
             worklist_s *current_input_file;
             for (current_input_file = input_file; current_input_file != NULL;
-                 current_input_file = current_input_file->next) {
+                    current_input_file = current_input_file->next) {
                 if (!do_stage_per_stage || !current_input_file->had_error) {
                     source_s *current_parsed_filepath = current_input_file->parsed_file;
                     ctx->current_source = current_parsed_filepath;
@@ -619,7 +617,7 @@ int dopass(context_s *ctx)
         ptr_include = ctx->include;
         for (;;) {
             argc += 2;
-            ptr_include = (char *) _mbschr((unsigned char *) ptr_include, ';');
+            ptr_include = (char *) _mbschr(ptr_include, ';');
             if (ptr_include == NULL) {
                 break;
             }
@@ -658,12 +656,12 @@ int dopass(context_s *ctx)
         for (;;) {
             char *ptr_end;
 
-            ptr_end = (char *) _mbschr((unsigned char *) ptr_include, ';');
+            ptr_end = (char *) _mbschr(ptr_include, ';');
             if (ptr_end == NULL) {
                 break;
             }
             if (ptr_include != ptr_end) {
-                int pos_non_whitespace = (int) _mbsspn((unsigned char *) ptr_include, (unsigned char *) " \t");
+                int pos_non_whitespace = (int) _mbsspn(ptr_include, " \t");
                 if (pos_non_whitespace < ptr_end - ptr_include) {
                     *argv_ptr++ = &arg_ptr[1];
                     arg_ptr = append(&arg_ptr[1], "-I");
@@ -676,7 +674,7 @@ int dopass(context_s *ctx)
             }
             ptr_include = &ptr_end[1];
         }
-        pos_non_whitespace = _mbsspn((unsigned char *) ptr_include, (unsigned char *) " \t");
+        pos_non_whitespace = _mbsspn(ptr_include, " \t");
         if (pos_non_whitespace < strlen(ptr_include)) {
             *argv_ptr++ = &arg_ptr[1];
             arg_ptr = append(&arg_ptr[1], "-I");
@@ -978,7 +976,7 @@ char *replaca(char *buffer, const char *format, context_s *ctx)
                 break;
             case 'B':
                 basename(path_buffer, filepath);
-                _mbsupr((unsigned char *) path_buffer);
+                _mbsupr(path_buffer);
                 dest = concat(dest, path_buffer);
                 break;
             case 'e':
@@ -1010,14 +1008,14 @@ char *replaca(char *buffer, const char *format, context_s *ctx)
                 }
                 break;
             case 'm':
-            {
-                char *exe_buffer = xnew(1024);
-                replaca(exe_buffer, Exefilename, ctx);
-                mapfile(dest, exe_buffer);
-                dest += strlen(dest);
-                xfree(exe_buffer);
-                break;
-            }
+                {
+                    char *exe_buffer = xnew(1024);
+                    replaca(exe_buffer, Exefilename, ctx);
+                    mapfile(dest, exe_buffer);
+                    dest += strlen(dest);
+                    xfree(exe_buffer);
+                    break;
+                }
             }
             format += 2;
         } else {
@@ -1091,4 +1089,3 @@ size_t replaca_strlen(const char *text, context_s *ctx)
     }
     return len;
 }
-
